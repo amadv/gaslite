@@ -1,0 +1,38 @@
+# Agent home directories (created at runtime, visible on host)
+home/*
+!home/.gitkeep
+
+# Log directory contents (populated at runtime by journald, smtpd, etc.)
+log/*
+!log/.gitkeep
+!log/journal
+log/journal/*
+!log/journal/.gitkeep
+
+# Mail spool contents (populated at runtime by opensmtpd)
+mail/*
+!mail/.gitkeep
+
+# Agent snapshot repository (separate GIT_DIR, not part of this repo)
+.agent-snapshots
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.temp
+
+# Shared workspace runtime data (task board, artifacts, preset state)
+shared/*
+!shared/.gitkeep
+
+# OS
+.DS_Store
+
+# IDE
+.vscode
+.idea
+
+# TUI dependencies
+tui/node_modules

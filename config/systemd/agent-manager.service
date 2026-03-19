@@ -1,0 +1,11 @@
+[Unit]
+Description=Reconcile agent services for all registered users at boot
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/agent-manager.sh
+
+[Install]
+WantedBy=multi-user.target

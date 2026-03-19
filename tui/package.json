@@ -1,0 +1,14 @@
+{
+  "name": "gaslite",
+  "version": "0.1.0",
+  "description": "Interactive TUI for gaslite",
+  "type": "module",
+  "main": "cli.mjs",
+  "bin": {
+    "gaslite": "./cli.mjs"
+  },
+  "scripts": {
+    "start": "node cli.mjs"
+  },
+  "dependencies": {}
+}

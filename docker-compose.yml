@@ -1,0 +1,79 @@
+services:
+  agent-host:
+    image: agent-host:latest
+    container_name: agent-host
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Systemd must run as PID 1 with privilege and cgroup access.
+    # See docs/systemd-cgroup-docker-compat.md for background.
+    privileged: true
+    cgroup: host
+    # Keep stdin/tty open so the container stays alive
+    stdin_open: true
+    tty: true
+    tmpfs:
+      # systemd writes lock files and runtime state here
+      - /run
+      - /run/lock
+    volumes:
+      # Agent home directories — persisted on the host
+      - ./home:/home
+      # System and agent logs (journald, smtpd) — persisted on the host
+      - ./log:/var/log
+      # Shared artifact directory — persisted on the host
+      - ./shared:/home/shared
+      # cgroup filesystem — must be read-write so systemd can create child
+      # cgroups for per-agent resource limits (MemoryMax, CPUQuota).
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    environment:
+      # AI provider keys — set these on the host and they propagate to all agents.
+      # sync-api-keys.sh writes them to /etc/agent-api-keys/global.env at boot.
+
+      # Anthropic
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # OpenAI
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Google / Gemini
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      # Mistral
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+      # Cohere
+      - COHERE_API_KEY=${COHERE_API_KEY:-}
+      # Groq
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      # Together.ai
+      - TOGETHER_API_KEY=${TOGETHER_API_KEY:-}
+      # Fireworks.ai
+      - FIREWORKS_API_KEY=${FIREWORKS_API_KEY:-}
+      # Perplexity
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
+      # Replicate
+      - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN:-}
+      # Hugging Face
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY:-}
+      - HF_TOKEN=${HF_TOKEN:-}
+      # AWS Bedrock
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-}
+      # Azure OpenAI
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      # Z.ai
+      - ZAI_API_KEY=${ZAI_API_KEY:-}
+      # GitHub — used by gh CLI and git HTTPS authentication
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GH_TOKEN=${GH_TOKEN:-}
+      # Agent runtime tuning
+      - AGENT_CYCLE_INTERVAL=${AGENT_CYCLE_INTERVAL:-}
+      - AGENT_MODEL=${AGENT_MODEL:-}
+      - AGENT_MAX_TURNS=${AGENT_MAX_TURNS:-}
+      # Agent retry/backoff behaviour
+      - AGENT_BACKOFF_MAX=${AGENT_BACKOFF_MAX:-}
+      - AGENT_CIRCUIT_BREAKER=${AGENT_CIRCUIT_BREAKER:-}
+      # Swarm orchestrator tuning
+      - ORCHESTRATOR_POLL_INTERVAL=${ORCHESTRATOR_POLL_INTERVAL:-}
+      - ORCHESTRATOR_FAIL_FAST=${ORCHESTRATOR_FAIL_FAST:-}

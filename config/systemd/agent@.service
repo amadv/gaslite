@@ -1,0 +1,55 @@
+[Unit]
+Description=Agent process for %i
+After=basic.target
+
+[Service]
+User=%i
+Group=%i
+WorkingDirectory=/home/%i
+Environment=MAIL=/home/%i/Maildir
+ExecStart=/usr/local/bin/run-agent.sh
+Type=simple
+Restart=always
+RestartSec=5
+
+# Direct all output to the journal for collection by journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agent-%i
+
+# ── Security hardening ───────────────────────────────────────────────
+# Directives are grouped by Docker compatibility tier. Refer to
+# docs/systemd-cgroup-docker-compat.md for the full analysis.
+
+# Tier 1: Compatible with Docker — kernel-level flags, no cgroup/mount
+# interaction required.
+NoNewPrivileges=true
+RestrictSUIDSGID=true
+
+# Tier 2: Requires cgroup write access. These work when docker-compose.yml
+# sets cgroup:host and mounts /sys/fs/cgroup read-write. They enforce
+# per-agent resource quotas.
+MemoryMax=512M
+CPUQuota=50%
+
+# ── Tier 3 & 4: Disabled — Docker incompatible ──────────────────────
+# These conflict with overlay2, Docker's mount namespace, or privileged
+# container mode. The Docker container boundary provides equivalent
+# isolation; agents also run as unprivileged users with no sudo access.
+#
+# Mount namespace conflicts (Tier 3):
+# ProtectSystem=full
+# PrivateTmp=true
+# RestrictNamespaces=true
+#
+# Capability/kernel restrictions — clash with privileged mode (Tier 4):
+# ProtectKernelTunables=true
+# ProtectKernelModules=true
+# ProtectControlGroups=true
+# ProtectKernelLogs=true
+# CapabilityBoundingSet=
+# AmbientCapabilities=
+# RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
