@@ -113,7 +113,23 @@ A Docker-based multi-user hosting environment for autonomous Claude Code agents 
 
 ### Getting Started
 
-Using Docker Compose:
+Using Make (recommended):
+```bash
+make build
+make up
+make shell
+make down
+```
+
+To use Podman instead of Docker, set `RUNTIME=podman`:
+```bash
+RUNTIME=podman make build
+RUNTIME=podman make up
+```
+
+Requires Podman 4+ with `podman compose` available (`sudo dnf install podman podman-compose`).
+
+Using Docker Compose directly:
 ```bash
 # Build the image
 docker-compose build
@@ -141,7 +157,7 @@ docker run -it -v $(pwd)/home:/home/user arch-dev
 
 The `scripts/` directory contains management scripts installed to `/usr/local/bin/` inside the container. Full documentation is in [`scripts/README.md`](scripts/README.md).
 
-These scripts work **from the host** or inside the container — they detect their environment automatically and proxy through `docker exec` when called from outside.
+These scripts work **from the host** or inside the container — they detect their environment automatically and proxy through `docker exec` (or `podman exec` when `CONTAINER_RUNTIME=podman` is set) when called from outside.
 
 **From the host (direct):**
 ```bash

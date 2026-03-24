@@ -27,7 +27,7 @@ readonly HELP="Usage: artifact.sh {register|list|get|read} [options]"
 # --- Container check ---
 if [[ ! -f /.dockerenv ]]; then
     CONTAINER="${AGENT_HOST_CONTAINER:-gaslite}"
-    exec docker exec "$CONTAINER" /usr/local/bin/"$(basename "$0")" "$@"
+    exec ${CONTAINER_RUNTIME:-docker} exec "$CONTAINER" /usr/local/bin/"$(basename "$0")" "$@"
 fi
 
 # Shared workspace must be present before anything else

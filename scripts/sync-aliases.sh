@@ -20,7 +20,7 @@ set -euo pipefail
 # Override the container name via AGENT_HOST_CONTAINER if needed.
 if [[ ! -f /.dockerenv ]]; then
     CONTAINER="${AGENT_HOST_CONTAINER:-gaslite}"
-    exec docker exec "$CONTAINER" /usr/local/bin/"$(basename "$0")" "$@"
+    exec ${CONTAINER_RUNTIME:-docker} exec "$CONTAINER" /usr/local/bin/"$(basename "$0")" "$@"
 fi
 
 readonly OUTPUT_FILE="/etc/smtpd/aliases"

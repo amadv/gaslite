@@ -24,7 +24,7 @@ readonly HELP_TEXT="Usage: send-mail.sh <recipient> [--from <user>] [--subject <
 # Set AGENT_HOST_CONTAINER to override the default container name.
 if [[ ! -f /.dockerenv ]]; then
     CONTAINER="${AGENT_HOST_CONTAINER:-gaslite}"
-    exec docker exec "$CONTAINER" /usr/local/bin/"$(basename "$0")" "$@"
+    exec ${CONTAINER_RUNTIME:-docker} exec "$CONTAINER" /usr/local/bin/"$(basename "$0")" "$@"
 fi
 
 # --- Argument parsing ---

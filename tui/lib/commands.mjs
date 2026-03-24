@@ -5,6 +5,8 @@ import { getContainerName } from "./container.mjs";
 import { getPersonaNames, getPresetFiles } from "./completions.mjs";
 import { resolvePresetPath, extractPresetVars } from "./preset-vars.mjs";
 
+const RUNTIME = process.env.RUNTIME || "docker";
+
 const thisDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(thisDir, "..", "..");
 
@@ -40,19 +42,19 @@ const CONTAINER_REQUIRED = new Set([
 const COMMANDS = {
   // --- Container ---
   build: {
-    description: "Build the Docker image",
+    description: "Build the container image",
     category: "Container",
-    toSpawn: () => ({ cmd: "docker", args: ["compose", "build"] }),
+    toSpawn: () => ({ cmd: RUNTIME, args: ["compose", "build"] }),
   },
   up: {
     description: "Start the container",
     category: "Container",
-    toSpawn: () => ({ cmd: "docker", args: ["compose", "up", "-d"] }),
+    toSpawn: () => ({ cmd: RUNTIME, args: ["compose", "up", "-d"] }),
   },
   down: {
     description: "Stop and remove the container",
     category: "Container",
-    toSpawn: () => ({ cmd: "docker", args: ["compose", "down"] }),
+    toSpawn: () => ({ cmd: RUNTIME, args: ["compose", "down"] }),
   },
   restart: {
     description: "Restart the container",
@@ -63,7 +65,7 @@ const COMMANDS = {
     description: "View container logs",
     category: "Container",
     toSpawn: () => ({
-      cmd: "docker",
+      cmd: RUNTIME,
       args: ["compose", "logs", "-f", "--timestamps"],
     }),
   },

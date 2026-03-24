@@ -1,8 +1,12 @@
 .PHONY: help build up down restart shell logs clean reset soft-reset create-agent remove-agent update-agent list-agents list-personas agent-logs agent-shell mail sync-aliases set-api-key get-api-keys remove-api-key clear-api-keys list-providers snapshot-init snapshot snapshot-log snapshot-diff snapshot-status tui install-tui task-add task-list task-ready task-update task-graph swarm-status swarm-stop health artifact-list artifact-register artifact-get list-presets load-preset test-systemd
 
+# Container runtime: docker (default) or podman
+RUNTIME ?= docker
+export CONTAINER_RUNTIME := $(RUNTIME)
+
 help:
 	@echo "Container lifecycle:"
-	@echo "  make build                  - Build the Docker image"
+	@echo "  make build                  - Build the container image (RUNTIME=podman to use Podman)"
 	@echo "  make up                     - Start the container (boots with systemd)"
 	@echo "  make down                   - Stop and remove the container"
 	@echo "  make restart                - Stop then start the container"
@@ -75,31 +79,31 @@ help:
 # --- Container lifecycle ---
 
 build:
-	docker compose build
+	$(RUNTIME) compose build
 
 up:
-	docker compose up -d
+	$(RUNTIME) compose up -d
 
 down:
-	docker compose down
+	$(RUNTIME) compose down
 
 restart: down up
 
 shell:
-	docker compose exec gaslite /bin/bash
+	$(RUNTIME) compose exec gaslite /bin/bash
 
 logs:
-	docker compose logs -f --timestamps
+	$(RUNTIME) compose logs -f --timestamps
 
 clean: down
-	docker rmi gaslite:latest || true
+	$(RUNTIME) rmi gaslite:latest || true
 	@echo "Note: agent home directories preserved in ./home/"
 
 soft-reset:
-	docker compose exec -T gaslite /usr/local/bin/soft-reset.sh --yes
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/soft-reset.sh --yes
 
 reset: down
-	docker rmi gaslite:latest || true
+	$(RUNTIME) rmi gaslite:latest || true
 	sudo find ./home -mindepth 1 ! -name '.gitkeep' -delete
 	sudo find ./log -mindepth 1 ! -name '.gitkeep' -delete
 	@echo "Reset complete. All agent data (including Maildir) and logs have been removed."
@@ -110,7 +114,7 @@ create-agent:
 ifndef NAME
 	$(error NAME is required. Usage: make create-agent NAME=alice [PERSONA=coder] [INSTRUCTIONS="text"] [API_KEY=PROVIDER=key])
 endif
-	docker compose exec -T gaslite /usr/local/bin/create-agent.sh $(NAME) \
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/create-agent.sh $(NAME) \
 		$(if $(PERSONA),--persona $(PERSONA)) \
 		$(if $(INSTRUCTIONS),--instructions "$(INSTRUCTIONS)") \
 		$(if $(API_KEY),--api-key $(API_KEY))
@@ -119,7 +123,7 @@ remove-agent:
 ifndef NAME
 	$(error NAME is required. Usage: make remove-agent NAME=alice)
 endif
-	docker compose exec -T gaslite /usr/local/bin/remove-agent.sh $(NAME)
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/remove-agent.sh $(NAME)
 
 update-agent:
 ifndef NAME
@@ -128,10 +132,10 @@ endif
 ifndef PERSONA
 	$(error PERSONA is required. Usage: make update-agent NAME=alice PERSONA=coder)
 endif
-	docker compose exec -T gaslite /usr/local/bin/update-agent.sh $(NAME) --persona $(PERSONA)
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/update-agent.sh $(NAME) --persona $(PERSONA)
 
 list-agents:
-	docker compose exec -T gaslite /usr/local/bin/list-agents.sh
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/list-agents.sh
 
 list-personas:
 	@echo "Available personas (from config/personas/):"
@@ -150,16 +154,16 @@ agent-logs:
 ifndef NAME
 	$(error NAME is required. Usage: make agent-logs NAME=alice)
 endif
-	docker compose exec -T gaslite journalctl -u agent@$(NAME).service -f
+	$(RUNTIME) compose exec -T gaslite journalctl -u agent@$(NAME).service -f
 
 agent-shell:
 ifndef NAME
 	$(error NAME is required. Usage: make agent-shell NAME=alice)
 endif
-	docker compose exec --user $(NAME) gaslite /bin/bash
+	$(RUNTIME) compose exec --user $(NAME) gaslite /bin/bash
 
 sync-aliases:
-	docker compose exec -T gaslite /usr/local/bin/sync-aliases.sh
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/sync-aliases.sh
 
 mail:
 ifndef TO
@@ -168,7 +172,7 @@ endif
 ifndef MSG
 	$(error MSG is required. Usage: make mail TO=alice MSG="Hello" [FROM=bob] [SUBJECT="Hi"])
 endif
-	docker compose exec -T gaslite /usr/local/bin/send-mail.sh "$(TO)" $(if $(FROM),--from "$(FROM)") $(if $(SUBJECT),--subject "$(SUBJECT)") -- "$(MSG)"
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/send-mail.sh "$(TO)" $(if $(FROM),--from "$(FROM)") $(if $(SUBJECT),--subject "$(SUBJECT)") -- "$(MSG)"
 
 # --- API key management ---
 
@@ -179,13 +183,13 @@ endif
 ifndef KEY
 	$(error KEY is required. Usage: make set-api-key NAME=alice KEY=ANTHROPIC_API_KEY=sk-xxx)
 endif
-	docker compose exec -T gaslite /usr/local/bin/manage-api-keys.sh set $(NAME) $(KEY)
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/manage-api-keys.sh set $(NAME) $(KEY)
 
 get-api-keys:
 ifndef NAME
 	$(error NAME is required. Usage: make get-api-keys NAME=alice)
 endif
-	docker compose exec -T gaslite /usr/local/bin/manage-api-keys.sh get $(NAME)
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/manage-api-keys.sh get $(NAME)
 
 remove-api-key:
 ifndef NAME
@@ -194,16 +198,16 @@ endif
 ifndef KEY
 	$(error KEY is required. Usage: make remove-api-key NAME=alice KEY=OPENAI_API_KEY)
 endif
-	docker compose exec -T gaslite /usr/local/bin/manage-api-keys.sh remove $(NAME) $(KEY)
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/manage-api-keys.sh remove $(NAME) $(KEY)
 
 clear-api-keys:
 ifndef NAME
 	$(error NAME is required. Usage: make clear-api-keys NAME=alice)
 endif
-	docker compose exec -T gaslite /usr/local/bin/manage-api-keys.sh clear $(NAME)
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/manage-api-keys.sh clear $(NAME)
 
 list-providers:
-	docker compose exec -T gaslite /usr/local/bin/manage-api-keys.sh list-providers
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/manage-api-keys.sh list-providers
 
 # --- Agent snapshots (host-side) ---
 
@@ -225,13 +229,13 @@ snapshot-status:
 # --- Swarm orchestration ---
 
 swarm-status:
-	docker compose exec -T gaslite /usr/local/bin/swarm-status.sh
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/swarm-status.sh
 
 swarm-stop:
-	docker compose exec -T gaslite /usr/local/bin/stop-swarm.sh $(if $(REASON),--reason "$(REASON)")
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/stop-swarm.sh $(if $(REASON),--reason "$(REASON)")
 
 health:
-	docker compose exec -T gaslite /usr/local/bin/check-health.sh
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/check-health.sh
 
 task-add:
 ifndef SUBJECT
@@ -240,15 +244,15 @@ endif
 ifndef OWNER
 	$(error OWNER is required. Usage: make task-add SUBJECT="Build API" OWNER=alice)
 endif
-	docker compose exec -T gaslite /usr/local/bin/task.sh add "$(SUBJECT)" --owner $(OWNER) \
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/task.sh add "$(SUBJECT)" --owner $(OWNER) \
 		$(if $(DESCRIPTION),--description "$(DESCRIPTION)") \
 		$(if $(BLOCKED_BY),--blocked-by $(BLOCKED_BY))
 
 task-list:
-	docker compose exec -T gaslite /usr/local/bin/task.sh list $(if $(OWNER),--owner $(OWNER)) $(if $(STATUS),--status $(STATUS))
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/task.sh list $(if $(OWNER),--owner $(OWNER)) $(if $(STATUS),--status $(STATUS))
 
 task-ready:
-	docker compose exec -T gaslite /usr/local/bin/task.sh ready $(if $(OWNER),--owner $(OWNER))
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/task.sh ready $(if $(OWNER),--owner $(OWNER))
 
 task-update:
 ifndef ID
@@ -257,27 +261,27 @@ endif
 ifndef STATUS
 	$(error STATUS is required. Usage: make task-update ID=task-abc123 STATUS=completed [RESULT="summary"])
 endif
-	docker compose exec -T gaslite /usr/local/bin/task.sh update $(ID) --status $(STATUS) \
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/task.sh update $(ID) --status $(STATUS) \
 		$(if $(RESULT),--result "$(RESULT)")
 
 task-graph:
-	docker compose exec -T gaslite /usr/local/bin/task.sh graph
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/task.sh graph
 
 artifact-list:
-	docker compose exec -T gaslite /usr/local/bin/artifact.sh list $(if $(PRODUCER),--producer $(PRODUCER))
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/artifact.sh list $(if $(PRODUCER),--producer $(PRODUCER))
 
 artifact-register:
 ifndef FILE
 	$(error FILE is required. Usage: make artifact-register FILE=reports/out.csv [DESCRIPTION="text"])
 endif
-	docker compose exec -T gaslite /usr/local/bin/artifact.sh register $(FILE) \
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/artifact.sh register $(FILE) \
 		$(if $(DESCRIPTION),--description "$(DESCRIPTION)")
 
 artifact-get:
 ifndef FILE
 	$(error FILE is required. Usage: make artifact-get FILE=reports/out.csv)
 endif
-	docker compose exec -T gaslite /usr/local/bin/artifact.sh get $(FILE)
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/artifact.sh get $(FILE)
 
 # --- Workflow presets ---
 
@@ -304,7 +308,7 @@ endif
 # --- Testing ---
 
 test-systemd:
-	docker compose exec -T gaslite /usr/local/bin/test-systemd-services.sh $(if $(filter 1,$(VERBOSE)),--verbose)
+	$(RUNTIME) compose exec -T gaslite /usr/local/bin/test-systemd-services.sh $(if $(filter 1,$(VERBOSE)),--verbose)
 
 # --- Interactive TUI ---
 

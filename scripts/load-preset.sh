@@ -40,7 +40,7 @@ if [[ ! -f /.dockerenv ]]; then
     fi
     # Stream the preset into the container (docker cp is blocked by systemd's tmpfs on /tmp)
     STAGING="/tmp/preset-$$.json"
-    docker exec -i "$CONTAINER" tee "$STAGING" > /dev/null < "$MANIFEST"
+    ${CONTAINER_RUNTIME:-docker} exec -i "$CONTAINER" tee "$STAGING" > /dev/null < "$MANIFEST"
     shift
     # Collect environment variables to forward for expansion
     FORWARD_ENV=()
@@ -48,9 +48,9 @@ if [[ ! -f /.dockerenv ]]; then
         [[ -z "$envkey" ]] && continue
         FORWARD_ENV+=(-e "$envkey=$envval")
     done < <(env | grep -v '^_=' | grep -v '^SHLVL=' | grep -v '^PWD=' || true)
-    docker exec "${FORWARD_ENV[@]}" "$CONTAINER" /usr/local/bin/"$(basename "$0")" "$STAGING" "$@"
+    ${CONTAINER_RUNTIME:-docker} exec "${FORWARD_ENV[@]}" "$CONTAINER" /usr/local/bin/"$(basename "$0")" "$STAGING" "$@"
     RC=$?
-    docker exec "$CONTAINER" rm -f "$STAGING"
+    ${CONTAINER_RUNTIME:-docker} exec "$CONTAINER" rm -f "$STAGING"
     exit $RC
 fi
 

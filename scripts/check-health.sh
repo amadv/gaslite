@@ -18,7 +18,7 @@ set -euo pipefail
 # Proxy to the container when invoked from the host side.
 if [[ ! -f /.dockerenv ]]; then
     CONTAINER="${AGENT_HOST_CONTAINER:-gaslite}"
-    exec docker exec "$CONTAINER" /usr/local/bin/"$(basename "$0")" "$@"
+    exec ${CONTAINER_RUNTIME:-docker} exec "$CONTAINER" /usr/local/bin/"$(basename "$0")" "$@"
 fi
 
 IDLE_LIMIT=900   # seconds before a heartbeat is considered stale

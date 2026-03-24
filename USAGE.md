@@ -4,7 +4,7 @@ Day-to-day operations for the agent hosting system. All commands are driven thro
 
 ## Prerequisites
 
-- Docker and Docker Compose installed on the host
+- Docker with Compose plugin, **or** Podman 4+ with `podman compose` available
 - Network access to Arch Linux package mirrors (required for builds)
 - At least one LLM provider API key (Anthropic or another supported provider)
 
@@ -18,6 +18,13 @@ make up
 ```
 
 This builds the Arch Linux image and starts the container with systemd as the init process.
+
+To use Podman instead of Docker, prefix every `make` command with `RUNTIME=podman`:
+
+```bash
+RUNTIME=podman make build
+RUNTIME=podman make up
+```
 
 ### 2. Create your first agent
 
